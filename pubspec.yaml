@@ -11,7 +11,7 @@ dependencies:
   flutter:
     sdk: flutter
   # WebView que muestra el juego HTML empaquetado en los assets
-  flutter_inappwebview: ^6.1.5
+  flutter_inappwebview: 6.2.0-beta.3
   # Copia de seguridad del progreso (récords) fuera del WebView
   shared_preferences: ^2.5.6
   # Evita que la pantalla se apague mientras se juega

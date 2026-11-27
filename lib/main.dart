@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:collection';
 import 'dart:ui' show AppExitResponse;
 
@@ -23,6 +24,16 @@ bool get esAndroid =>
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
+  // Si algo falla al arrancar, mostrar el error en pantalla en lugar de
+  // dejarla en negro (así se puede saber qué pasó).
+  try {
+    await _arrancar();
+  } catch (e, pila) {
+    runApp(PantallaError(mensaje: 'Error al iniciar:\n$e\n\n$pila'));
+  }
+}
+
+Future<void> _arrancar() async {
 
   if (esAndroid) {
     // Pantalla completa: las barras del sistema aparecen al deslizar y se
@@ -43,6 +54,32 @@ Future<void> main() async {
     puente: puente,
     script: PuenteProgreso.generarScript(guardados),
   ));
+}
+
+/// Pantalla sencilla que muestra un error de arranque.
+class PantallaError extends StatelessWidget {
+  const PantallaError({super.key, required this.mensaje});
+  final String mensaje;
+
+  @override
+  Widget build(BuildContext context) {
+    return MaterialApp(
+      debugShowCheckedModeBanner: false,
+      home: Scaffold(
+        backgroundColor: colorFondo,
+        body: SafeArea(
+          child: SingleChildScrollView(
+            padding: const EdgeInsets.all(16),
+            child: SelectableText(
+              'Arcade de bolsillo no pudo arrancar.\n'
+              'Toma captura de esta pantalla y mándala:\n\n$mensaje',
+              style: const TextStyle(color: Colors.white, fontSize: 14),
+            ),
+          ),
+        ),
+      ),
+    );
+  }
 }
 
 class ArcadeApp extends StatelessWidget {
@@ -82,6 +119,18 @@ class PantallaJuego extends StatefulWidget {
 class _PantallaJuegoState extends State<PantallaJuego> {
   DateTime _ultimaVibracion = DateTime.fromMillisecondsSinceEpoch(0);
   InAppWebViewController? _controlador;
+  // Diagnóstico: si el juego no carga, se muestra qué pasó.
+  bool _cargado = false;
+  final List<String> _errores = [];
+  Timer? _vigilante;
+
+  void _anotarError(String texto) {
+    if (!mounted) return;
+    setState(() {
+      _errores.add(texto);
+      if (_errores.length > 8) _errores.removeAt(0);
+    });
+  }
   late final AppLifecycleListener _ciclo;
 
   @override
@@ -99,6 +148,10 @@ class _PantallaJuegoState extends State<PantallaJuego> {
         return AppExitResponse.exit;
       },
     );
+    // Si en 10 segundos el juego no terminó de cargar, avisar.
+    _vigilante = Timer(const Duration(seconds: 10), () {
+      if (!_cargado) _anotarError('El juego no terminó de cargar en 10 s.');
+    });
   }
 
   void _guardarYa() {
@@ -108,6 +161,7 @@ class _PantallaJuegoState extends State<PantallaJuego> {
   @override
   void dispose() {
     _ciclo.dispose();
+    _vigilante?.cancel();
     widget.puente.guardarPendientes().whenComplete(widget.puente.cerrar);
     super.dispose();
   }
@@ -155,7 +209,57 @@ class _PantallaJuegoState extends State<PantallaJuego> {
       child: Scaffold(
         backgroundColor: colorFondo,
         body: SafeArea(
-          child: InAppWebView(
+          child: Stack(
+            children: [
+              Positioned.fill(child: _webView()),
+              if (!_cargado && _errores.isEmpty)
+                const Center(
+                  child: Text('Cargando…',
+                      style: TextStyle(color: Colors.white70, fontSize: 18)),
+                ),
+              if (_errores.isNotEmpty) _panelErrores(),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _panelErrores() {
+    return Positioned(
+      left: 8,
+      right: 8,
+      bottom: 8,
+      child: Material(
+        color: const Color(0xEE3A0A14),
+        borderRadius: BorderRadius.circular(12),
+        child: Padding(
+          padding: const EdgeInsets.all(12),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              const Text('Problema detectado (toma captura y mándala):',
+                  style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
+              const SizedBox(height: 6),
+              SelectableText(_errores.join('\n'),
+                  style: const TextStyle(color: Colors.white, fontSize: 12)),
+              Align(
+                alignment: Alignment.centerRight,
+                child: TextButton(
+                  onPressed: () => setState(_errores.clear),
+                  child: const Text('Ocultar'),
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _webView() {
+    return InAppWebView(
             initialFile: 'assets/web/index.html',
             initialUserScripts: UnmodifiableListView<UserScript>([
               UserScript(
@@ -206,9 +310,22 @@ class _PantallaJuegoState extends State<PantallaJuego> {
                 action: PermissionResponseAction.DENY,
               );
             },
-          ),
-        ),
-      ),
+            onLoadStop: (controlador, url) {
+              if (mounted) setState(() => _cargado = true);
+            },
+            onReceivedError: (controlador, solicitud, error) {
+              if (solicitud.isForMainFrame ?? true) {
+                _anotarError('Error al cargar ${solicitud.url}: ${error.type} ${error.description}');
+              }
+            },
+            onConsoleMessage: (controlador, mensaje) {
+              if (mensaje.messageLevel == ConsoleMessageLevel.ERROR) {
+                _anotarError('JS: ${mensaje.message}');
+              }
+            },
+            onRenderProcessGone: (controlador, detalle) {
+              _anotarError('El navegador interno se cerró (didCrash=${detalle.didCrash}).');
+            },
     );
   }
 }

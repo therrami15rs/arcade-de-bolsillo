@@ -1,0 +1,44 @@
+# Genera una sola vez las carpetas android/ y windows/ (con nombre, permisos
+# e iconos ya aplicados) y las guarda en la rama "plataformas", para poder
+# abrir el proyecto directo en Android Studio.
+name: Generar carpetas android y windows
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  generar:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
+
+      - uses: subosito/flutter-action@1a449444c387b1966244ae4d4f8c696479add0b2 # v2.23.0
+        with:
+          channel: stable
+
+      - name: flutter create
+        run: |
+          flutter create --platforms=android,windows --project-name arcade_de_bolsillo --org com.ramiro .
+          rm -f test/widget_test.dart
+
+      - name: Parches (nombre, permiso VIBRATE, minSdk 24, ventana)
+        run: |
+          python3 tool/parchar_plataformas.py android
+          python3 tool/parchar_plataformas.py windows
+
+      - name: Iconos
+        run: |
+          flutter pub get
+          dart run flutter_launcher_icons
+
+      - name: Guardar en la rama plataformas
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git checkout -b plataformas
+          git add -f android windows
+          git commit -m "Carpetas android/ y windows/ generadas por flutter create $(flutter --version | head -1)"
+          git push -f origin plataformas
