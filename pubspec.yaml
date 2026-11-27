@@ -1,0 +1,48 @@
+name: arcade_de_bolsillo
+description: "Arcade de bolsillo: 10 juegos clásicos en una app para Android y Windows."
+publish_to: none
+
+version: 1.0.0+1
+
+environment:
+  sdk: '>=3.5.0 <4.0.0'
+
+dependencies:
+  flutter:
+    sdk: flutter
+  # WebView que muestra el juego HTML empaquetado en los assets
+  flutter_inappwebview: ^6.1.5
+  # Copia de seguridad del progreso (récords) fuera del WebView
+  shared_preferences: ^2.5.6
+  # Evita que la pantalla se apague mientras se juega
+  wakelock_plus: ^1.8.2
+  # Vibración en Android (navigator.vibrate del juego)
+  vibration: ^3.2.1
+
+dev_dependencies:
+  flutter_test:
+    sdk: flutter
+  flutter_lints: ^5.0.0
+  flutter_launcher_icons: ^0.14.4
+
+flutter:
+  uses-material-design: true
+  assets:
+    - assets/web/
+    - assets/web/fonts/
+
+# Configuración para generar los iconos con: dart run flutter_launcher_icons
+flutter_launcher_icons:
+  image_path: "assets/icon/icon.png"
+  android: true
+  ios: false
+  min_sdk_android: 24
+  adaptive_icon_background: "#140c2a"
+  adaptive_icon_foreground: "assets/icon/icon_fg.png"
+  # icon_fg.png ya trae su margen (dibujo dentro del 66% central),
+  # por eso no se agrega el margen extra del 16% que pone el paquete.
+  adaptive_icon_foreground_inset: 0
+  windows:
+    generate: true
+    image_path: "assets/icon/icon.png"
+    icon_size: 48

@@ -1,0 +1,10 @@
+# Configuración de iconos SOLO para Windows (la usa el job de Windows en CI,
+# donde no existe la carpeta android/). La de Android está en pubspec.yaml.
+flutter_launcher_icons:
+  image_path: "assets/icon/icon.png"
+  android: false
+  ios: false
+  windows:
+    generate: true
+    image_path: "assets/icon/icon.png"
+    icon_size: 48
