@@ -1,6 +1,4 @@
 # --- Carpetas de plataforma: se generan en CI con `flutter create` ---
-/android/
-/windows/
 /ios/
 /linux/
 /macos/

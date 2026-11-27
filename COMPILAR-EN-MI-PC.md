@@ -98,3 +98,18 @@ Flutter lo necesita para enlazar los plugins.
 | `Unable to find suitable Visual Studio toolchain` | Falta "Desarrollo para el escritorio con C++" en Visual Studio. |
 | El .exe no abre en otra PC | Instala **Microsoft Edge WebView2 Runtime** desde la página de Microsoft. |
 | `No connected devices` al instalar | Revisa la depuración USB y acepta el aviso en el celular. |
+
+---
+
+## Compilar desde Android Studio (sin usar el script)
+
+El proyecto ya trae las carpetas `android/` y `windows/` listas, así que Android Studio lo abre directo.
+
+1. **Instala los plugins (solo la primera vez):** en Android Studio ve a **File → Settings → Plugins** (en Mac: *Android Studio → Settings*), busca **Flutter**, dale **Install** (instala también **Dart**) y reinicia Android Studio.
+2. **Dile dónde está Flutter:** **File → Settings → Languages & Frameworks → Flutter → Flutter SDK path** = `C:\src\flutter`. Clic en **OK**.
+3. **Abre el proyecto:** **File → Open…** y elige la carpeta `arcade-de-bolsillo` (la que tiene `pubspec.yaml`). Si pregunta, elige **Trust Project**.
+4. **Descarga los paquetes:** abre `pubspec.yaml` y da clic en **Pub get** (arriba del archivo), o en la pestaña **Terminal** escribe `flutter pub get`.
+5. **Probar en tu celular:** conecta el celular con **Depuración USB** activada (ver Parte 3, opción B). Arriba, en la lista de dispositivos, elige tu celular y da clic en el botón verde **▶ Run** (`main.dart`). La primera vez tarda varios minutos.
+6. **Sacar el APK para compartir:** menú **Build → Flutter → Build APK**. Al terminar queda en `build\app\outputs\flutter-apk\app-release.apk`.
+
+> Con el botón ▶ se instala la versión de prueba (*debug*), que va más lenta. Para jugar normal usa el APK del paso 6 o, en la Terminal, `flutter run --release`.
