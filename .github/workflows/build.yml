@@ -59,6 +59,16 @@ jobs:
       - name: Pruebas
         run: flutter test
 
+      # flutter_inappwebview 6.1.5 usa una regla de ProGuard que el Android
+      # Gradle Plugin nuevo ya no acepta. Se cambia por la versión "optimize"
+      # (es la misma corrección que trae la rama nueva del paquete).
+      - name: Compatibilidad flutter_inappwebview (ProGuard)
+        run: |
+          f=$(find "${PUB_CACHE:-$HOME/.pub-cache}" -path '*flutter_inappwebview_android-*/android/build.gradle' | head -1)
+          echo "Archivo: $f"
+          sed -i "s/proguard-android.txt/proguard-android-optimize.txt/g" "$f"
+          grep -n "getDefaultProguardFile" "$f"
+
       - name: Compilar APK
         run: flutter build apk --release
 
@@ -107,6 +117,10 @@ jobs:
         run: flutter test
 
       - name: Compilar para Windows
+        # Visual Studio nuevo marca como error las corrutinas "experimentales"
+        # que usa flutter_inappwebview_windows; esta opción lo vuelve aviso.
+        env:
+          CL: /D_SILENCE_EXPERIMENTAL_COROUTINE_DEPRECATION_WARNINGS
         run: flutter build windows --release
 
       - name: Comprimir en ZIP
