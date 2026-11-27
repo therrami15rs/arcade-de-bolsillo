@@ -64,10 +64,11 @@ jobs:
       # (es la misma corrección que trae la rama nueva del paquete).
       - name: Compatibilidad flutter_inappwebview (ProGuard)
         run: |
-          f=$(find "${PUB_CACHE:-$HOME/.pub-cache}" -path '*flutter_inappwebview_android-*/android/build.gradle' | head -1)
-          echo "Archivo: $f"
-          sed -i "s/proguard-android.txt/proguard-android-optimize.txt/g" "$f"
-          grep -n "getDefaultProguardFile" "$f"
+          for f in $(find "${PUB_CACHE:-$HOME/.pub-cache}" -path '*/flutter_inappwebview_android-*/android/build.gradle' -not -path '*/example/*'); do
+            echo "Archivo: $f"
+            sed -i "s/proguard-android.txt/proguard-android-optimize.txt/g" "$f"
+            grep -n "getDefaultProguardFile" "$f" || true
+          done"
 
       - name: Compilar APK
         run: flutter build apk --release
